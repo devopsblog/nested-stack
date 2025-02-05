@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  AssetBucket:
+    Description: Name of the asset bucket
+    Type: String
+    Default: "my-globally-defined-bucket"
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+       TemplateURL: !Sub 'https://${AssetBucket}.s3.amazonaws.com/cloudformation/vpc.yaml'
+       Tags:
+         - Key: department
+           Value: engineering
+         - Key: creation-type
+           Value: cloudformation 
+  S3BucketCreation:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+       TemplateURL: !Sub 'https://${AssetBucket}.s3.amazonaws.com/cloudformation/s3-bucket.yaml'
+       Parameters:
+         BucketName: test-bucket-satish-12345
+       Tags: 
+         - Key: department
+           Value: engineering
+         - Key: creation-type
+           Value: cloudformation1

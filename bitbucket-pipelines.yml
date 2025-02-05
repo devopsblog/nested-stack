@@ -1,0 +1,48 @@
+image: python:3.9
+definitions:
+  steps:
+    - step: &build
+        name: Build
+        script:
+          - echo CICD Setup/Update
+          - apt-get update
+          - apt-get install python3-pip ruby ruby-dev rubygems-integration -y
+          - pip install --upgrade pip
+          - pip install --upgrade awscli
+          - pip3 install checkov cfn-lint
+          - gem install cfn-nag    
+          - cfn-lint templates/*.yaml
+          - cfn_nag_scan --input-path templates
+          - checkov -d templates
+    - step: &deploy
+        runs-on:
+          - self.hosted
+          - linux
+        oidc: true
+        max-time: 5           
+        name: Deploy
+        script:
+          - apt-get update
+          - apt-get install python3-pip -y
+          - pip install --upgrade pip
+          - pip install --upgrade awscli
+          - export AWS_REGION=$AWS_DEFAULT_REGION
+          - export AWS_ROLE_ARN=arn:aws:iam::xxxxxxxxxxxx:role/oidc-demo
+          - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
+          - echo $BITBUCKET_STEP_OIDC_TOKEN > $(pwd)/web-identity-token
+          - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+          - aws sts assume-role-with-web-identity --role-arn arn:aws:iam::xxxxxxxxxxxx:role/oidc-demo --role-session-name build-session  --web-identity-token "$BITBUCKET_STEP_OIDC_TOKEN" --duration-seconds 1000
+          - echo $BITBUCKET_BRANCH
+          - aws s3 cp templates/ s3://$s3_bucket/cloudformation/ --recursive
+          - aws cloudformation deploy --template-file templates/root_template.yaml --stack-name $STACK-abc-infra --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset
+
+pipelines:
+  branches:
+    development:
+      - step:
+          <<: *deploy
+          deployment: dev
+    master:
+      - step:
+          <<: *deploy
+          deployment: prod
