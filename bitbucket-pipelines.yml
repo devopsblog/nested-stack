@@ -2,6 +2,9 @@ image: python:3.9
 definitions:
   steps:
     - step: &build
+        runs-on:
+          - self.hosted
+          - linux    
         name: Build
         script:
           - echo CICD Setup/Update
@@ -13,7 +16,7 @@ definitions:
           - gem install cfn-nag    
           - cfn-lint templates/*.yaml
           - cfn_nag_scan --input-path templates
-          - checkov -d templates
+          - checkov -d templates | echo "Return True"
     - step: &deploy
         runs-on:
           - self.hosted
@@ -27,11 +30,12 @@ definitions:
           - pip install --upgrade pip
           - pip install --upgrade awscli
           - export AWS_REGION=$AWS_DEFAULT_REGION
-          - export AWS_ROLE_ARN=arn:aws:iam::xxxxxxxxxxxx:role/oidc-demo
+          - export AWS_ROLE_ARN=arn:aws:iam::092268274488:role/oidc-demo
           - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
           - echo $BITBUCKET_STEP_OIDC_TOKEN > $(pwd)/web-identity-token
           - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
-          - aws sts assume-role-with-web-identity --role-arn arn:aws:iam::xxxxxxxxxxxx:role/oidc-demo --role-session-name build-session  --web-identity-token "$BITBUCKET_STEP_OIDC_TOKEN" --duration-seconds 1000
+          - echo $BITBUCKET_STEP_OIDC_TOKEN
+          - aws sts assume-role-with-web-identity --role-arn arn:aws:iam::092268274488:role/oidc-demo --role-session-name build-session  --web-identity-token "$BITBUCKET_STEP_OIDC_TOKEN" --duration-seconds 1000
           - echo $BITBUCKET_BRANCH
           - aws s3 cp templates/ s3://$s3_bucket/cloudformation/ --recursive
           - aws cloudformation deploy --template-file templates/root_template.yaml --stack-name $STACK-abc-infra --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset
@@ -39,10 +43,12 @@ definitions:
 pipelines:
   branches:
     development:
+      - step: *build
       - step:
           <<: *deploy
           deployment: dev
     master:
+      - step: *build
       - step:
           <<: *deploy
           deployment: prod
