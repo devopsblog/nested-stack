@@ -30,12 +30,12 @@ definitions:
           - pip install --upgrade pip
           - pip install --upgrade awscli
           - export AWS_REGION=$AWS_DEFAULT_REGION
-          - export AWS_ROLE_ARN=arn:aws:iam::092268274488:role/oidc-demo
+          - export AWS_ROLE_ARN=arn:aws:iam::xxxxxxxxxxxx:role/oidc-demo
           - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
           - echo $BITBUCKET_STEP_OIDC_TOKEN > $(pwd)/web-identity-token
           - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
           - echo $BITBUCKET_STEP_OIDC_TOKEN
-          - aws sts assume-role-with-web-identity --role-arn arn:aws:iam::092268274488:role/oidc-demo --role-session-name build-session  --web-identity-token "$BITBUCKET_STEP_OIDC_TOKEN" --duration-seconds 1000
+          - aws sts assume-role-with-web-identity --role-arn arn:aws:iam::xxxxxxxxxxxxx:role/oidc-demo --role-session-name build-session  --web-identity-token "$BITBUCKET_STEP_OIDC_TOKEN" --duration-seconds 1000
           - echo $BITBUCKET_BRANCH
           - aws s3 cp templates/ s3://$s3_bucket/cloudformation/ --recursive
           - aws cloudformation deploy --template-file templates/root_template.yaml --stack-name $STACK-abc-infra --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset
