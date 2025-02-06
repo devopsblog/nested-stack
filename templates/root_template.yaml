@@ -13,7 +13,7 @@ Resources:
          - Key: department
            Value: engineering
          - Key: creation-type
-           Value: cloudformation 
+           Value: cloudformation  
   S3BucketCreation:
     Type: AWS::CloudFormation::Stack
     Properties:
