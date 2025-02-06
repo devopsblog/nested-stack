@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   VpcCidrBlock:
     Type: String
-    Default: "10.0.0.0/16"
+    Default: "192.168.0.0/24"
     Description: "CIDR block for the VPC"
 
 Resources:
@@ -30,7 +30,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: "10.0.1.0/24"
+      CidrBlock: "192.168.0.0/26"
       AvailabilityZone: !Select [0, !GetAZs ""]
       MapPublicIpOnLaunch: true
       Tags:
@@ -41,7 +41,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: "10.0.2.0/24"
+      CidrBlock: "192.168.0.64/26"
       AvailabilityZone: !Select [1, !GetAZs ""]
       MapPublicIpOnLaunch: true
       Tags:
@@ -52,7 +52,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: "10.0.3.0/24"
+      CidrBlock: "192.168.0.128/26"
       AvailabilityZone: !Select [0, !GetAZs ""]
       Tags:
         - Key: Name
@@ -62,7 +62,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: "10.0.4.0/24"
+      CidrBlock: "192.168.0.192/26"
       AvailabilityZone: !Select [1, !GetAZs ""]
       Tags:
         - Key: Name
@@ -86,7 +86,7 @@ Resources:
       DestinationCidrBlock: "0.0.0.0/0"
       GatewayId: !Ref InternetGateway
 
-  PrivateRouteTable:
+  PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
@@ -94,13 +94,28 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-Private-RT"
 
-  PrivateRoute:
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-Private-RT"
+          
+  PrivateRoute1:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: "0.0.0.0/0"
-      NatGatewayId: !Ref NATGateway
-
+      NatGatewayId: !Ref NATGateway1
+      
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NATGateway2
+      
   PublicSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -115,23 +130,36 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnetA
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable1
   PrivateSubnetBRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnetB
-      RouteTableId: !Ref PrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable2
 
-  ElasticIPAddress:
+  ElasticIPAddress1:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
 
-  NATGateway:
+  ElasticIPAddress2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      
+  NATGateway1:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt ElasticIPAddress.AllocationId
+      AllocationId: !GetAtt ElasticIPAddress1.AllocationId
       SubnetId: !Ref PublicSubnetA
+      Tags:
+        - Key: Name
+          Value: !Sub "NAT-${AWS::StackName}"
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIPAddress2.AllocationId
+      SubnetId: !Ref PublicSubnetB
       Tags:
         - Key: Name
           Value: !Sub "NAT-${AWS::StackName}"
